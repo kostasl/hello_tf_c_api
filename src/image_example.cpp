@@ -41,27 +41,28 @@ int main( ) {
   cv::Mat tNFImageB = cv::imread("/home/kostasl/workspace/zebrafishtrack/tensorDNN/trainset/nonfish/templ_HB70_LR_camB_Templ_651.jpg", cv::IMREAD_UNCHANGED );
 
   cv::Mat tFImage = cv::imread( "/home/kostasl/workspace/hello_tf_c_api/build/fish_sample2.jpg", cv::IMREAD_UNCHANGED );
-  cv::Mat tFImageB = cv::imread( "/home/kostasl/workspace/zebrafishtrack/tensorDNN/trainset/fish/templ_HB150_NF0_6dpf_LR_camB_Templ_35569.jpg", cv::IMREAD_UNCHANGED );
+  cv::Mat tFImageB = cv::imread( "/home/kostasl/workspace/zebrafishtrack/tensorDNN/trainset/fish/templ_HB150_NF0_6dpf_LR_camB_Templ_35569.jpg", cv::IMREAD_GRAYSCALE );
 
   std::cout<< "<<< Identify NON FISH >>> " <<std::endl;
- // runSavedModel(tNFImage);
- // runSavedModel(tNFImageB);
-
-  std::cout<< "<<< Identify FISH >>> " <<std::endl<<std::endl<<std::endl;
- // runSavedModel(tFImage);
- // runSavedModel(tFImageB);
-  //std::cout << "DONE C API loadSavedModel ~~" << std::endl;
-  //std::cin.get();
-
-  std::cout << "Running the INPUT_IMAGE -> GET_VECTOR example:" << std::endl;
   run_single_image_example(tNFImage);
-  std::cin.get();
-
   std::cout << std::endl;
 
-  std::cout << "Running the INPUT_IMAGE -> GET_IMAGE example:" << std::endl;
-  run_expecting_image_example();
+  run_single_image_example(tNFImageB);
   std::cin.get();
+  std::cout << std::endl;
+
+  std::cout<< "<<< Identify FISH >>> " <<std::endl<<std::endl<<std::endl;
+  run_single_image_example(tFImage);
+  std::cout << std::endl;
+
+
+  run_single_image_example(tFImageB);
+  std::cin.get();
+  std::cout << std::endl;
+
+  //std::cout << "Running the INPUT_IMAGE -> GET_IMAGE example:" << std::endl;
+  //run_expecting_image_example();
+  //std::cin.get();
 
   return 0;
 }
@@ -183,6 +184,8 @@ void runSavedModel(cv::Mat tImage)
 
 }
 
+
+/// Run example code loading a non-frozen - SavedModel of fishNet that classifies 28x38 Greyscale images whether they contain a zebrafish head
 void run_single_image_example(cv::Mat image)
 {
   // Only 20% of the available GPU memory will be allocated
@@ -190,7 +193,7 @@ void run_single_image_example(cv::Mat image)
 
   // the model will try to infer the input and output layer names automatically 
   // (only use if it's a simple "one-input -> one-output" model
-  bool inferInputOutput = true;
+  bool inferInputOutput = false;
 
   // load a model from a .pb file
   tf_image::TF_Model model1;

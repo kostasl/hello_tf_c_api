@@ -27,12 +27,12 @@ bool tf_image::TF_Model::loadModel( const std::string & path, const double gpu_m
   //m_pGraph = tf_utils::LoadGraph( path.c_str() );
    //m_pSession  = tf_utils::CreateSession( m_pGraph, tf_utils::CreateSessionOptions( gpu_memory_fraction ) );
 
-  TF_SessionOptions* SessionOpts = TF_NewSessionOptions();
+  m_pSessionOpts = tf_utils::CreateSessionOptions( gpu_memory_fraction ); //TF_NewSessionOptions();
   TF_Buffer* RunOpts = NULL;
   const char* tags = "serve"; // default model serving tag; can change in future
   int ntags = 1;
   std::cout << "Load Session From Saved Model :" << path << std::endl;
-  m_pSession  = TF_LoadSessionFromSavedModel(SessionOpts, RunOpts, path.c_str() , &tags, ntags, m_pGraph, NULL, m_pStatus);
+  m_pSession  = TF_LoadSessionFromSavedModel(m_pSessionOpts, RunOpts, path.c_str() , &tags, ntags, m_pGraph, NULL, m_pStatus);
   if(TF_GetCode(m_pStatus) == TF_OK)
   {
       printf("TF_LoadSessionFromSavedModel OK\n");
@@ -176,10 +176,16 @@ tf_image::TF_Model::~TF_Model()
   //TF_DeleteStatus( m_pStatus );
   //tf_utils::DeleteSession( m_pSession );
   // //Free memory
+  std::cout<< "-Delete Model- " << std::endl;
+  //std::cout<< "Deleted Graph- " << std::endl;
   TF_DeleteGraph(m_pGraph);
-  TF_DeleteSession(m_pSession, m_pStatus);
+  //std::cout<< "Deleted Session Opts- " << std::endl;
   TF_DeleteSessionOptions(m_pSessionOpts);
+  //std::cout<< "Deleted Session- " << std::endl;
+  TF_DeleteSession(m_pSession, m_pStatus);
+  //std::cout<< "Deleted Status- " << std::endl;
   TF_DeleteStatus(m_pStatus);
+
 }
 
 std::vector<TF_Tensor*> tf_image::TF_Model::processDataImg( const std::map<std::string, std::vector<cv::Mat>>& input ) {
