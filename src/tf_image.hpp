@@ -34,6 +34,7 @@ namespace tf_image {
     TF_Session* m_pSession;
     TF_Graph* m_pGraph;
     TF_Status* m_pStatus;
+    TF_SessionOptions* m_pSessionOpts;
 
     std::vector<TF_Output> input_ops;
     std::vector<TF_Output> output_ops;

@@ -31,6 +31,7 @@
 #endif
 
 #include <tensorflow/c/c_api.h> // TensorFlow C API header.
+
 #include <cstddef>
 #include <cstdint>
 #include <vector>

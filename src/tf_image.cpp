@@ -23,19 +23,33 @@ bool tf_image::TF_Model::loadModel( const std::string & path, const double gpu_m
 {
   // create an empty status;
   m_pStatus = TF_NewStatus();
+  m_pGraph = TF_NewGraph();
+  //m_pGraph = tf_utils::LoadGraph( path.c_str() );
+   //m_pSession  = tf_utils::CreateSession( m_pGraph, tf_utils::CreateSessionOptions( gpu_memory_fraction ) );
 
-  m_pGraph = tf_utils::LoadGraph( path.c_str() );
-
+  TF_SessionOptions* SessionOpts = TF_NewSessionOptions();
+  TF_Buffer* RunOpts = NULL;
+  const char* tags = "serve"; // default model serving tag; can change in future
+  int ntags = 1;
+  std::cout << "Load Session From Saved Model :" << path << std::endl;
+  m_pSession  = TF_LoadSessionFromSavedModel(SessionOpts, RunOpts, path.c_str() , &tags, ntags, m_pGraph, NULL, m_pStatus);
+  if(TF_GetCode(m_pStatus) == TF_OK)
+  {
+      printf("TF_LoadSessionFromSavedModel OK\n");
+  }
+  else
+  {
+      printf("%s",TF_Message(m_pStatus));
+  }
+  if ( m_pSession == nullptr ) {
+    std::cerr << "Can't create session" << std::endl;
+    return false;
+  }
   if ( m_pGraph == nullptr ) {
     std::cerr << "Can't load graph" << std::endl;
     return false;
   }
 
-  m_pSession  = tf_utils::CreateSession( m_pGraph, tf_utils::CreateSessionOptions( gpu_memory_fraction ) );
-  if ( m_pSession == nullptr ) {
-    std::cerr << "Can't create session" << std::endl;
-    return false;
-  }
 
   if ( inferIO ) {
     // load the list of layers, try to automatically set the input and output operations
@@ -45,12 +59,13 @@ bool tf_image::TF_Model::loadModel( const std::string & path, const double gpu_m
     // get first:
     op = TF_GraphNextOperation( m_pGraph, &pos );
     auto name = TF_OperationName( op );
-
+    std::cout << "1st OP found (Input):" << name << std::endl;
     setInputs( { name } );
 
     // get last:
     while ( (op = TF_GraphNextOperation( m_pGraph, &pos )) != nullptr ) {
       name = TF_OperationName( op );
+      std::cout << "Found Output Op:" << name << std::endl;
     }
     setOutputs( { name } );
   }
@@ -89,29 +104,34 @@ std::vector<std::vector<float>> tf_image::TF_Model::predict_image2vector( const 
   std::vector<std::vector<float>> output;
 
   if ( input.size() != input_ops.size() ) {
+     std::cout  << "[ERROR] input.size() != input_ops.size()" << std::endl;
     return output;
   }
 
   std::map<std::string, std::vector<cv::Mat>> inputMap;
 
+  std::cout  << "Make Input Map" << std::endl;
   int j = 0;
   for ( auto& inp : input_op_names ) {
     inputMap[inp.first] = { input[j++] };
   }
 
+  std::cout  << "processDataImg..." << std::endl;
   auto output_tensors = processDataImg( inputMap );
 
   // if everything ok, parse the output:
   if ( !output_tensors.empty() ) {
 
     // construct the method output:
+    std::cout  << "construct the method output..." << std::endl;
     for ( size_t i = 0; i < output_tensors.size(); i++ )
     {
       auto shape = GetTensorShape( output_tensors.at( i ) );
       auto data = tf_utils::GetTensorsData<float>( { output_tensors.at( i ) } );
       output.push_back(data[0]);
     }
-  } 
+  }else
+   std::cout  << "Output Tensor is empty..." << std::endl;
 
   return output;
 }
@@ -152,9 +172,14 @@ std::vector<cv::Mat> tf_image::TF_Model::predict_image2image( const std::vector<
 
 tf_image::TF_Model::~TF_Model()
 {
-  tf_utils::DeleteGraph( m_pGraph );
-  TF_DeleteStatus( m_pStatus );
-  tf_utils::DeleteSession( m_pSession );
+  //tf_utils::DeleteGraph( m_pGraph );
+  //TF_DeleteStatus( m_pStatus );
+  //tf_utils::DeleteSession( m_pSession );
+  // //Free memory
+  TF_DeleteGraph(m_pGraph);
+  TF_DeleteSession(m_pSession, m_pStatus);
+  TF_DeleteSessionOptions(m_pSessionOpts);
+  TF_DeleteStatus(m_pStatus);
 }
 
 std::vector<TF_Tensor*> tf_image::TF_Model::processDataImg( const std::map<std::string, std::vector<cv::Mat>>& input ) {
